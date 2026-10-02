@@ -1,0 +1,10 @@
+# Python (backend)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Env files
+.env
+.env.*
