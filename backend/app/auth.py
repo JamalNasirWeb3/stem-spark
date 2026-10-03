@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import Header, HTTPException
@@ -58,7 +59,10 @@ def auth_status() -> str:
 
 
 def _settings() -> tuple[str, str] | None:
-    url = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+    raw = os.environ.get("SUPABASE_URL", "").strip().strip("\"'")
+    # Keep only scheme and host, so a pasted callback URL (".../auth/v1/callback") still works.
+    parts = urlsplit(raw if "://" in raw else f"https://{raw}") if raw else None
+    url = f"{parts.scheme}://{parts.netloc}" if parts and parts.netloc else ""
     key = os.environ.get("SUPABASE_ANON_KEY", "").strip()
     return (url, key) if url and key else None
 

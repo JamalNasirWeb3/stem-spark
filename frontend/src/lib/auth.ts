@@ -9,10 +9,22 @@
 
 import { createClient, type Session, type SupabaseClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const url = projectUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
 export const authEnabled = Boolean(url && anonKey);
+
+// Keeps only https://<project>.supabase.co, so a pasted callback or dashboard
+// URL (".../auth/v1/callback") still works.
+function projectUrl(raw: string | undefined): string | undefined {
+  const value = raw?.trim().replace(/^["']|["']$/g, "");
+  if (!value) return undefined;
+  try {
+    return new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`).origin;
+  } catch {
+    return undefined;
+  }
+}
 
 export const supabase: SupabaseClient | null =
   authEnabled && typeof window !== "undefined"

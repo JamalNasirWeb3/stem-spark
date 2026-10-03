@@ -124,3 +124,8 @@ def test_missing_settings_fail_closed(supabase, monkeypatch):
     res = _problems("good-token")
     assert res.status_code == 503
     assert res.json()["detail"]["code"] == "auth_not_configured"
+
+
+def test_pasted_callback_url_still_works(supabase, monkeypatch):
+    monkeypatch.setenv("SUPABASE_URL", "https://test.supabase.co/auth/v1/callback")
+    assert _problems("good-token").status_code == 200
