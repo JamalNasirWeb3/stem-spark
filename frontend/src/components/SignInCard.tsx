@@ -46,7 +46,24 @@ export default function SignInCard() {
 
   return (
     <section id="sign-in" className="mt-8 rounded-xl border border-line bg-card p-5 sm:p-7">
-      <h2 className="text-xl font-semibold sm:text-2xl">Sign in to create lesson plans</h2>
+      <div className="flex items-center gap-4">
+        <span
+          aria-hidden
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-contrast"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="m3 7 9 6 9-6" />
+          </svg>
+        </span>
+        <h2 className="text-xl font-semibold sm:text-2xl">Sign in to create lesson plans</h2>
+      </div>
 
       {sentTo === null ? (
         <form onSubmit={sendEmail}>

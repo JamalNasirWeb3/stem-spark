@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import AccountButton from "@/components/AccountButton";
+import AccountCard from "@/components/AccountCard";
 import AgentProgress, { CONCEPT_AGENTS, PLAN_AGENTS } from "@/components/AgentProgress";
 import InstallButton from "@/components/InstallButton";
 import LessonPlanView from "@/components/LessonPlanView";
@@ -243,7 +243,6 @@ export default function Home() {
               {agents === "demo" ? "demo mode" : agents}
             </span>
           </span>
-          {authEnabled && <AccountButton auth={auth} />}
           <InstallButton />
         </div>
       </header>
@@ -254,6 +253,7 @@ export default function Home() {
 
       {step === "concept" && (
         <>
+          {auth.status === "signed_in" && <AccountCard session={auth.session} />}
           {needsSignIn && auth.status === "signed_out" && <SignInCard />}
           <form
             onSubmit={submitConcept}
