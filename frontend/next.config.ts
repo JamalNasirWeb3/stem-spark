@@ -2,7 +2,15 @@ import type { NextConfig } from "next";
 
 // FastAPI backend. Requests to /api/* are proxied there so the browser (and the
 // service worker) only ever talk to the Next.js origin.
-const backendUrl = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
+const backendUrl = normalizeBackendUrl(process.env.BACKEND_URL ?? "http://127.0.0.1:8000");
+
+// Tolerates the usual copy-paste slips in a hosting dashboard: surrounding spaces
+// or quotes, a missing https://, a trailing slash. Next.js rejects the rewrite otherwise.
+function normalizeBackendUrl(raw: string): string {
+  let url = raw.trim().replace(/^["']|["']$/g, "").trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  return url;
+}
 
 const nextConfig: NextConfig = {
   // `next dev` only serves its client scripts to localhost by default. Without
