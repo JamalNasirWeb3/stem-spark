@@ -82,6 +82,7 @@ def build(concept: str, problem: Problem, stem: StemIntegration, ctx: LessonCont
         ),
         output=_StsEdpDraft,
         effort="medium",
+        model=llm.SUPPORT_MODEL,
     )
     return StsEdp(
         science_technology_society=draft.science_technology_society,

@@ -190,3 +190,13 @@ def test_api_errors_become_teacher_messages(fake_claude, error, code):
     res = client.post("/api/problems", json={"concept": "Magnetism"})
     assert res.status_code == 503
     assert res.json()["detail"]["code"] == code
+
+
+def test_stream_reports_agent_errors_as_events(fake_claude):
+    fake_claude.overrides["_StsEdpDraft"] = ("refusal", {})
+    res = client.post("/api/lesson-plan/stream", json=_plan_request())
+    assert res.status_code == 200
+    events = [json.loads(line) for line in res.text.splitlines() if line]
+    assert events[0] == {"type": "agent_done", "agent": "stem"}
+    assert events[-1]["type"] == "error"
+    assert events[-1]["code"] == "agent_refused"

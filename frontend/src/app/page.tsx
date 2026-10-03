@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import AgentProgress, { CONCEPT_AGENTS, PLAN_AGENTS } from "@/components/AgentProgress";
 import LessonPlanView from "@/components/LessonPlanView";
 import PipelineSteps, { type StepState } from "@/components/PipelineSteps";
 import {
@@ -26,6 +27,11 @@ import {
 // then the remaining agents run in a second request.
 type Step = "concept" | "select" | "plan";
 type AgentsBadge = AgentsStatus | "checking";
+// Timing for the progress bar. `done` counts agents finished in the current request.
+type Progress = { startedAt: number; stageStartedAt: number; done: number };
+
+// Only called from event handlers; the React Compiler can't tell and flags Date.now().
+const timestamp = () => Date.now();
 
 const CONCEPT_SUGGESTIONS = [
   "Conductors & Insulators",
@@ -50,13 +56,15 @@ const LESSON_TIMES = [
 const FIELD =
   "w-full rounded-lg border border-line bg-card px-4 py-3 text-foreground placeholder:text-muted focus:border-accent focus:outline-none";
 
-function stepStates(step: Step, loading: boolean): StepState[] {
+function stepStates(step: Step, loading: boolean, agentsDone: number): StepState[] {
   if (step === "plan") return ["done", "done", "done", "done", "done"];
   if (step === "select") {
-    // While the second request runs, STEM -> STS-EDP -> Lesson Plan are all in flight.
-    return loading
-      ? ["done", "done", "active", "active", "active"]
-      : ["done", "active", "todo", "todo", "todo"];
+    // The second request reports each agent as it finishes: STEM -> STS-EDP -> Lesson Plan.
+    if (!loading) return ["done", "active", "todo", "todo", "todo"];
+    const agents = [0, 1, 2].map<StepState>((i) =>
+      i < agentsDone ? "done" : i === agentsDone ? "active" : "todo",
+    );
+    return ["done", "done", ...agents];
   }
   return [loading ? "active" : "todo", "todo", "todo", "todo", "todo"];
 }
@@ -73,6 +81,7 @@ export default function Home() {
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<Progress>({ startedAt: 0, stageStartedAt: 0, done: 0 });
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentsBadge>("checking");
 
@@ -114,6 +123,8 @@ export default function Home() {
   }
 
   async function run<T>(task: () => Promise<T>, onDone: (result: T) => void) {
+    const startedAt = timestamp();
+    setProgress({ startedAt, stageStartedAt: startedAt, done: 0 });
     setLoading(true);
     setError(null);
     try {
@@ -141,7 +152,10 @@ export default function Home() {
 
   function selectProblem(problem: Problem) {
     run(
-      () => fetchLessonPlan(concept, problem, context),
+      () =>
+        fetchLessonPlan(concept, problem, context, () =>
+          setProgress((p) => ({ ...p, done: p.done + 1, stageStartedAt: timestamp() })),
+        ),
       (result) => {
         setPlan(result);
         setIsExample(false);
@@ -194,7 +208,7 @@ export default function Home() {
         </span>
       </header>
 
-      <PipelineSteps states={stepStates(step, loading)} />
+      <PipelineSteps states={stepStates(step, loading, progress.done)} />
 
       {error && (
         <p className="mt-6 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">{error}</p>
@@ -304,6 +318,14 @@ export default function Home() {
                 See a finished example
               </button>
             </div>
+            {loading && (
+              <AgentProgress
+                agents={CONCEPT_AGENTS}
+                current={0}
+                startedAt={progress.startedAt}
+                stageStartedAt={progress.stageStartedAt}
+              />
+            )}
           </form>
 
           {saved.length > 0 && (
@@ -359,10 +381,12 @@ export default function Home() {
             ))}
           </ul>
           {loading && (
-            <p className="mt-4 text-sm" role="status">
-              The STEM, STS–EDP and Lesson Plan agents are building your lesson plan. This
-              usually takes a minute or two…
-            </p>
+            <AgentProgress
+              agents={PLAN_AGENTS}
+              current={progress.done}
+              startedAt={progress.startedAt}
+              stageStartedAt={progress.stageStartedAt}
+            />
           )}
           <button onClick={restart} className="mt-6 text-sm underline underline-offset-4">
             Start over

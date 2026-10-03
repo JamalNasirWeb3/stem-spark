@@ -22,6 +22,9 @@ from pydantic import BaseModel, ValidationError
 log = logging.getLogger(__name__)
 
 MODEL = os.environ.get("STEM_AGENT_MODEL", "claude-opus-5-5")
+# The STEM and STS-EDP agents write short, structured output, so they can run on
+# a faster model than the Concept and Lesson Plan agents.
+SUPPORT_MODEL = os.environ.get("STEM_SUPPORT_AGENT_MODEL", MODEL)
 # Server-side refusal fallback: if Claude declines (e.g. a classifier false
 # positive on a chemistry topic), the API retries on a suitable fallback model.
 _FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -117,6 +120,7 @@ def generate[T: BaseModel](
     output: type[T],
     effort: str = "medium",
     max_tokens: int = 16000,
+    model: str | None = None,
 ) -> T:
     """Run one agent call and return its output validated against `output`."""
     client = _client()
@@ -127,7 +131,7 @@ def generate[T: BaseModel](
         )
     try:
         response = client.beta.messages.create(
-            model=MODEL,
+            model=model or MODEL,
             max_tokens=max_tokens,
             betas=[_FALLBACK_BETA],
             fallbacks="default",

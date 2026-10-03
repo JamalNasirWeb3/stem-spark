@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -67,3 +69,25 @@ def test_stage_minutes_sum_to_lesson_length(minutes):
 def test_rejects_out_of_range_lesson_time():
     body = {"concept": "Magnetism", "context": {"lesson_minutes": 5}}
     assert client.post("/api/problems", json=body).status_code == 422
+
+
+def _stream_events(res):
+    return [json.loads(line) for line in res.text.splitlines() if line]
+
+
+def test_stream_reports_each_agent_then_plan():
+    problem = client.post("/api/problems", json={"concept": "Magnetism"}).json()["problems"][0]
+    res = client.post("/api/lesson-plan/stream", json={"concept": "Magnetism", "problem": problem})
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("application/x-ndjson")
+    events = _stream_events(res)
+    assert [e["type"] for e in events] == ["agent_done", "agent_done", "plan"]
+    assert [e["agent"] for e in events[:2]] == ["stem", "sts_edp"]
+    assert events[2]["plan"]["problem"] == problem
+
+
+def test_stream_rejects_untrusted_problem_before_streaming():
+    fake = {"id": "x", "title": "Made-up topic", "description": "Not from the agent", "token": ""}
+    res = client.post("/api/lesson-plan/stream", json={"concept": "Magnetism", "problem": fake})
+    assert res.status_code == 403
+    assert res.json()["detail"]["code"] == "untrusted_problem"

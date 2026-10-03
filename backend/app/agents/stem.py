@@ -28,6 +28,7 @@ def integrate(concept: str, problem: Problem, ctx: LessonContext) -> StemIntegra
         request=f"{lesson_details(concept, ctx)}\n{chosen_problem(problem)}",
         output=StemIntegration,
         effort="medium",
+        model=llm.SUPPORT_MODEL,
     )
 
 

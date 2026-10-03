@@ -48,26 +48,28 @@ export class ApiError extends Error {
   }
 }
 
+async function errorFrom(res: Response): Promise<ApiError> {
+  const detail = await res
+    .json()
+    .then((b) => b?.detail)
+    .catch(() => undefined);
+  if (detail && typeof detail.message === "string") {
+    return new ApiError(detail.message, res.status, detail.code);
+  }
+  const message =
+    res.status === 422
+      ? "Please check what you entered and try again."
+      : `Request failed (${res.status})`;
+  return new ApiError(message, res.status);
+}
+
 async function post<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    const detail = await res
-      .json()
-      .then((b) => b?.detail)
-      .catch(() => undefined);
-    if (detail && typeof detail.message === "string") {
-      throw new ApiError(detail.message, res.status, detail.code);
-    }
-    const message =
-      res.status === 422
-        ? "Please check what you entered and try again."
-        : `Request failed (${res.status})`;
-    throw new ApiError(message, res.status);
-  }
+  if (!res.ok) throw await errorFrom(res);
   return res.json() as Promise<T>;
 }
 
@@ -75,8 +77,48 @@ export function fetchProblems(concept: string, context: LessonContext) {
   return post<ProblemsResponse>("/api/problems", { concept, context });
 }
 
-export function fetchLessonPlan(concept: string, problem: Problem, context: LessonContext) {
-  return post<LessonPlan>("/api/lesson-plan", { concept, problem, context });
+/** Agents the streaming endpoint reports as finished. The Lesson Plan Agent's result is the plan. */
+export type PlanAgent = "stem" | "sts_edp";
+
+type PlanEvent =
+  | { type: "agent_done"; agent: PlanAgent }
+  | { type: "plan"; plan: LessonPlan }
+  | { type: "error"; code: string; message: string };
+
+/**
+ * Builds the lesson plan through the streaming endpoint, which reports each
+ * agent as it finishes (newline-delimited JSON), so the UI can show real progress.
+ */
+export async function fetchLessonPlan(
+  concept: string,
+  problem: Problem,
+  context: LessonContext,
+  onAgentDone: (agent: PlanAgent) => void,
+): Promise<LessonPlan> {
+  const res = await fetch("/api/lesson-plan/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ concept, problem, context }),
+  });
+  if (!res.ok || !res.body) throw await errorFrom(res);
+
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (value) buffer += value;
+    const lines = buffer.split("\n");
+    buffer = done ? "" : (lines.pop() ?? "");
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line) as PlanEvent;
+      if (event.type === "agent_done") onAgentDone(event.agent);
+      else if (event.type === "plan") return event.plan;
+      else throw new ApiError(event.message, 502, event.code);
+    }
+    if (done) break;
+  }
+  throw new ApiError("The connection to the agents was lost. Please try again.", 502);
 }
 
 export type AgentsStatus = "ready" | "demo" | "setup needed" | "offline";
