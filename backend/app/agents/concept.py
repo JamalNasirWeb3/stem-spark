@@ -62,7 +62,7 @@ def suggest_problems(concept: str, ctx: LessonContext) -> list[Problem]:
         reason = result.off_topic_reason or "This doesn't look like a STEM topic."
         raise llm.AgentError(
             "off_topic",
-            f"{reason} STEM Lesson Planner only builds science, technology, "
+            f"{reason} STEM SPARK only builds science, technology, "
             "engineering and mathematics lessons.",
             422,
         )

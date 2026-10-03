@@ -109,7 +109,7 @@ def check_concept(concept: str) -> GuardrailViolation | None:
     looks_like = f" It looks like a {subject} topic." if subject else ""
     return GuardrailViolation(
         "off_topic",
-        f"STEM Lesson Planner only builds science, technology, engineering and "
+        f"STEM SPARK only builds science, technology, engineering and "
         f"mathematics lessons.{looks_like} Try a STEM concept such as {STEM_EXAMPLES}.",
     )
 

@@ -1,4 +1,4 @@
-// STEM Spark service worker.
+// STEM SPARK service worker.
 // Network-first for pages and static assets, falling back to cache so the app
 // shell opens offline. /api/* is never cached: the agent pipeline needs the
 // backend. Saved lesson plans live in localStorage (see src/lib/savedPlans.ts).

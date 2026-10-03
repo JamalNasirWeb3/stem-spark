@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STEM Lesson Planner AI",
+  title: "STEM SPARK",
   description: "From science concepts to real-world STEM solutions.",
-  appleWebApp: { capable: true, title: "STEM Planner", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "STEM SPARK", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

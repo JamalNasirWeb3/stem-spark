@@ -22,8 +22,49 @@ export function preloadPdfExport() {
   loadPdfMake().catch(() => {});
 }
 
+// Headings carry headlineLevel 1 so `pageBreakBefore` can stop them being orphaned.
 function section(title: string, body: Content): Content {
-  return [{ text: title, style: "h2" }, body];
+  return [{ text: title, style: "h2", headlineLevel: 1 }, body];
+}
+
+const BRAND = "STEM SPARK";
+const BADGE_SIZE = 56;
+
+const BADGE_X = 48; // aligned with the left page margin
+const BADGE_Y = 16;
+
+/** "STEM SPARK" in a circle at the top-left of every page (pdfmake repeats the header). */
+function brandBadge(): Content {
+  const r = BADGE_SIZE / 2;
+  const fontSize = 9;
+  // Two lines of text; Roboto's line box is ~1.17 x the font size.
+  const textHeight = 2 * fontSize * 1.17;
+  return [
+    {
+      canvas: [{ type: "ellipse", x: r, y: r, r1: r, r2: r, lineWidth: 2, lineColor: INK }],
+      absolutePosition: { x: BADGE_X, y: BADGE_Y },
+    },
+    {
+      // A fixed-width column so `alignment: "center"` centres within the circle.
+      columns: [
+        {
+          width: BADGE_SIZE,
+          text: "STEM\nSPARK",
+          bold: true,
+          fontSize,
+          lineHeight: 1,
+          alignment: "center",
+          color: INK,
+        },
+      ],
+      absolutePosition: { x: BADGE_X, y: BADGE_Y + r - textHeight / 2 },
+    },
+  ];
+}
+
+/** A heading and a table that should start on the same page (e.g. the 7 EDP stages). */
+function tableSection(title: string, table: Content): Content {
+  return { stack: [{ text: title, style: "h2" }, table], unbreakable: true };
 }
 
 /** A short paragraph section kept on one page together with its heading. */
@@ -66,9 +107,10 @@ export function buildDocDefinition(plan: LessonPlan): TDocumentDefinitions {
   });
 
   return {
-    info: { title: `${plan.concept}: ${plan.problem.title}`, creator: "STEM Lesson Planner AI" },
+    info: { title: `${plan.concept}: ${plan.problem.title}`, creator: BRAND },
     pageSize: "A4",
-    pageMargins: [48, 56, 48, 56],
+    // Top margin leaves room for the brand badge in the page header.
+    pageMargins: [48, 88, 48, 56],
     defaultStyle: { font: "Roboto", fontSize: 11, color: INK, lineHeight: 1.25 },
     styles: {
       eyebrow: { fontSize: 9, color: MUTED, characterSpacing: 1 },
@@ -76,9 +118,13 @@ export function buildDocDefinition(plan: LessonPlan): TDocumentDefinitions {
       h2: { fontSize: 13, bold: true, margin: [0, 14, 0, 6] },
       muted: { color: MUTED },
     },
+    header: brandBadge,
+    // Move a section heading to the next page if nothing else follows it on this one.
+    pageBreakBefore: (node, following) =>
+      node.headlineLevel === 1 && following.getFollowingNodesOnPage().length === 0,
     footer: (page, pages) => ({
       columns: [
-        { text: "STEM Lesson Planner AI", style: "muted", fontSize: 8 },
+        { text: BRAND, style: "muted", fontSize: 8 },
         { text: `Page ${page} of ${pages}`, style: "muted", fontSize: 8, alignment: "right" },
       ],
       margin: [48, 16, 48, 0],
@@ -95,7 +141,7 @@ export function buildDocDefinition(plan: LessonPlan): TDocumentDefinitions {
 
       section("Objectives", bullets(plan.objectives)),
       section("Materials", bullets(plan.materials)),
-      section("STEM Integration", {
+      tableSection("STEM Integration", {
         table: {
           widths: ["*", "*"],
           body: [
@@ -106,9 +152,11 @@ export function buildDocDefinition(plan: LessonPlan): TDocumentDefinitions {
         layout: { hLineColor: () => LINE, vLineColor: () => LINE },
       }),
       textSection("Science–Technology–Society", plan.sts_edp.science_technology_society),
-      section("Engineering Design Process", {
+      tableSection("Engineering Design Process", {
         table: {
           headerRows: 1,
+          keepWithHeaderRows: 1,
+          dontBreakRows: true,
           widths: hasMinutes ? [60, 40, "*"] : [60, "*"],
           body: [
             (hasMinutes ? ["Stage", "Min", "What students do"] : ["Stage", "What students do"]).map(

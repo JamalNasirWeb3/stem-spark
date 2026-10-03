@@ -136,7 +136,7 @@ def test_request_shape(fake_claude):
         assert call["system"][0]["text"] == llm.SHARED_BRIEF
         assert "<concept>Conductors & Insulators</concept>" in call["messages"][0]["content"]
     efforts = [c["output_config"]["effort"] for c in fake_claude.calls]
-    assert efforts == ["medium", "medium", "medium", "high"]
+    assert efforts == ["medium", "medium", "medium", "medium"]
 
 
 def test_concept_agent_rejects_off_topic(fake_claude):

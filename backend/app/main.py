@@ -8,7 +8,7 @@ from app.schemas import LessonPlan, LessonPlanRequest, ProblemsRequest, Problems
 
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="STEM Lesson Planner AI")
+app = FastAPI(title="STEM SPARK")
 
 
 @app.exception_handler(llm.AgentError)

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "STEM Lesson Planner AI",
-    short_name: "STEM Planner",
+    name: "STEM SPARK",
+    short_name: "STEM SPARK",
     description: "From science concepts to real-world STEM solutions.",
     start_url: "/",
     display: "standalone",

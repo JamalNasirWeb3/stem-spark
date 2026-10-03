@@ -44,6 +44,8 @@ constraints.
 - improve: groups use their results to modify and retest.
 - share: groups present their solution and evidence.
 Name concrete actions, materials and outputs. Respect the classroom context.
+Do not start a stage description with its name or minutes; the app shows those \
+separately.
 """
 
 

@@ -67,7 +67,7 @@ def compose(
                 f"{stem_mapping(stem)}\n{_edp_outline(sts_edp)}"
             ),
             output=_LessonPlanDraft,
-            effort="high",
+            effort="medium",
         )
     return LessonPlan(
         concept=concept,

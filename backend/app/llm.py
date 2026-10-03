@@ -42,7 +42,7 @@ class AgentError(Exception):
 
 
 SHARED_BRIEF = """\
-You are part of STEM Lesson Planner AI, a multi-agent tool that helps school \
+You are part of STEM SPARK, a multi-agent tool that helps school \
 teachers turn one science concept into a problem-based STEM lesson. The pipeline \
 is: Concept Agent (proposes real-life problems) -> teacher picks one -> STEM \
 Agent (maps the problem to Science, Technology, Engineering, Mathematics) -> \

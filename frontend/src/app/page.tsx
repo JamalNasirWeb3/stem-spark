@@ -170,7 +170,7 @@ export default function Home() {
     <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:py-12">
       <header className="mb-10 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">STEM Lesson Planner AI</h1>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">STEM SPARK</h1>
           <p className="mt-2 font-serif text-lg italic text-muted sm:text-xl">
             From science concepts to real-world STEM solutions.
           </p>

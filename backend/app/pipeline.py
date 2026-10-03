@@ -1,4 +1,4 @@
-"""The STEM Lesson Planner pipeline, split at the teacher-selection step.
+"""The STEM SPARK pipeline, split at the teacher-selection step.
 
 Stage 1 (`propose_problems`) runs the Concept Agent and returns to the teacher.
 Stage 2 (`build_lesson_plan`) resumes with the chosen problem and runs the
