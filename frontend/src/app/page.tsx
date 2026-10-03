@@ -243,7 +243,7 @@ export default function Home() {
               {agents === "demo" ? "demo mode" : agents}
             </span>
           </span>
-          {authEnabled && <AccountButton auth={auth} onSignIn={showSignIn} />}
+          {authEnabled && <AccountButton auth={auth} />}
           <InstallButton />
         </div>
       </header>

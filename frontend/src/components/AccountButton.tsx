@@ -4,29 +4,11 @@ import { useState } from "react";
 import { type AuthState, signOut } from "@/lib/auth";
 import { clearSavedPlans } from "@/lib/savedPlans";
 
-const BUTTON =
-  "shrink-0 rounded-lg border-2 border-accent px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-contrast disabled:opacity-60";
-
-/** Header control: "Sign in", or the teacher's email with "Sign out". */
-export default function AccountButton({
-  auth,
-  onSignIn,
-}: {
-  auth: AuthState;
-  /** Shows the sign-in card. */
-  onSignIn: () => void;
-}) {
+/** Header control for a signed-in teacher: their email and "Sign out". Signing in happens in SignInCard. */
+export default function AccountButton({ auth }: { auth: AuthState }) {
   const [busy, setBusy] = useState(false);
 
-  if (auth.status === "loading") return null;
-
-  if (auth.status === "signed_out") {
-    return (
-      <button type="button" onClick={onSignIn} className={BUTTON}>
-        Sign in
-      </button>
-    );
-  }
+  if (auth.status !== "signed_in") return null;
 
   const email = auth.session.user.email ?? "Signed in";
   return (
