@@ -1,5 +1,7 @@
 // Types mirror backend/app/schemas.py — keep them in sync.
 
+import { accessToken } from "./auth";
+
 // `token` is the backend's guardrail signature: send problems back unchanged.
 export type Problem = { id: string; title: string; description: string; token?: string };
 
@@ -63,12 +65,21 @@ async function errorFrom(res: Response): Promise<ApiError> {
   return new ApiError(message, res.status);
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(path, {
+/** JSON POST that carries the signed-in teacher's token, when there is one. */
+async function postJson(path: string, body: unknown): Promise<Response> {
+  const token = await accessToken();
+  return fetch(path, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   });
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const res = await postJson(path, body);
   if (!res.ok) throw await errorFrom(res);
   return res.json() as Promise<T>;
 }
@@ -95,11 +106,7 @@ export async function fetchLessonPlan(
   context: LessonContext,
   onAgentDone: (agent: PlanAgent) => void,
 ): Promise<LessonPlan> {
-  const res = await fetch("/api/lesson-plan/stream", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ concept, problem, context }),
-  });
+  const res = await postJson("/api/lesson-plan/stream", { concept, problem, context });
   if (!res.ok || !res.body) throw await errorFrom(res);
 
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();

@@ -91,7 +91,7 @@ def test_missing_credentials(monkeypatch):
 
 
 def test_health_reports_model(fake_claude):
-    assert client.get("/api/health").json() == {"status": "ok", "agents": llm.MODEL}
+    assert client.get("/api/health").json()["agents"] == llm.MODEL
 
 
 def _plan_request(concept="Conductors & Insulators", minutes=80):

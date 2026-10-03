@@ -11,4 +11,6 @@ def template_agents(monkeypatch):
     (see test_claude_agents.py).
     """
     monkeypatch.setenv("STEM_AGENTS", "template")
+    # Sign-in is covered by test_auth.py; elsewhere it's off.
+    monkeypatch.setenv("STEM_AUTH", "off")
     llm._client.cache_clear()

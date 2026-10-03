@@ -10,7 +10,7 @@ client = TestClient(app)
 
 
 def test_health():
-    assert client.get("/api/health").json() == {"status": "ok", "agents": "template"}
+    assert client.get("/api/health").json() == {"status": "ok", "agents": "template", "auth": "off"}
 
 
 def test_full_pipeline():

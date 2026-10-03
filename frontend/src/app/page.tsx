@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
+import AccountButton from "@/components/AccountButton";
 import AgentProgress, { CONCEPT_AGENTS, PLAN_AGENTS } from "@/components/AgentProgress";
 import InstallButton from "@/components/InstallButton";
 import LessonPlanView from "@/components/LessonPlanView";
@@ -15,6 +16,13 @@ import {
   type LessonPlan,
   type Problem,
 } from "@/lib/api";
+import {
+  authEnabled,
+  getAuthState,
+  getServerAuthState,
+  signInWithGoogle,
+  subscribeAuth,
+} from "@/lib/auth";
 import { EXAMPLE_PLAN } from "@/lib/examplePlan";
 import { downloadLessonPlanPdf, preloadPdfExport } from "@/lib/pdfExport";
 import {
@@ -22,6 +30,7 @@ import {
   getServerSavedPlans,
   savePlan,
   subscribeSavedPlans,
+  syncPlans,
 } from "@/lib/savedPlans";
 
 // The pipeline pauses after the Concept Agent: the teacher picks a problem here,
@@ -91,6 +100,18 @@ export default function Home() {
   const [agents, setAgents] = useState<AgentsBadge>("checking");
 
   const saved = useSyncExternalStore(subscribeSavedPlans, getSavedPlans, getServerSavedPlans);
+  const auth = useSyncExternalStore(subscribeAuth, getAuthState, getServerAuthState);
+  const userId = auth.status === "signed_in" ? auth.session.user.id : null;
+  // Generating calls Claude, so the backend only serves signed-in teachers.
+  const needsSignIn = authEnabled && !userId;
+
+  // Bring saved plans in line with the teacher's account on sign-in and on reconnecting.
+  useEffect(() => {
+    if (!userId) return;
+    syncPlans();
+    window.addEventListener("online", syncPlans);
+    return () => window.removeEventListener("online", syncPlans);
+  }, [userId]);
 
   useEffect(() => {
     const check = () => checkAgents().then(setAgents);
@@ -216,6 +237,7 @@ export default function Home() {
               {agents === "demo" ? "demo mode" : agents}
             </span>
           </span>
+          {authEnabled && <AccountButton auth={auth} />}
           <InstallButton />
         </div>
       </header>
@@ -314,12 +336,23 @@ export default function Home() {
             />
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                disabled={loading || concept.trim().length < 2}
-                className="rounded-lg border-2 border-accent bg-accent px-5 py-3 font-medium text-accent-contrast disabled:border-line disabled:bg-transparent disabled:text-muted"
-              >
-                {loading ? "Concept Agent is thinking…" : "Find real-life problems"}
-              </button>
+              {needsSignIn ? (
+                <button
+                  type="button"
+                  disabled={auth.status === "loading"}
+                  onClick={() => signInWithGoogle()}
+                  className="rounded-lg border-2 border-accent bg-accent px-5 py-3 font-medium text-accent-contrast disabled:border-line disabled:bg-transparent disabled:text-muted"
+                >
+                  {auth.status === "loading" ? "Checking sign-in…" : "Sign in with Google to start"}
+                </button>
+              ) : (
+                <button
+                  disabled={loading || concept.trim().length < 2}
+                  className="rounded-lg border-2 border-accent bg-accent px-5 py-3 font-medium text-accent-contrast disabled:border-line disabled:bg-transparent disabled:text-muted"
+                >
+                  {loading ? "Concept Agent is thinking…" : "Find real-life problems"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => showPlan(EXAMPLE_PLAN, true)}
