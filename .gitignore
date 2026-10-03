@@ -9,3 +9,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Design documents: kept locally, not published
+idea-brief.pdf
+idea.docx
