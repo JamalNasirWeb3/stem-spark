@@ -1,0 +1,9 @@
+# Never upload local secrets or tooling. Set ANTHROPIC_API_KEY and
+# GUARDRAIL_SECRET as FastAPI Cloud environment variables instead.
+.env
+.env.*
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+tests/

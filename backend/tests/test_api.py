@@ -91,3 +91,25 @@ def test_stream_rejects_untrusted_problem_before_streaming():
     res = client.post("/api/lesson-plan/stream", json={"concept": "Magnetism", "problem": fake})
     assert res.status_code == 403
     assert res.json()["detail"]["code"] == "untrusted_problem"
+
+
+def test_stream_sends_heartbeats_while_an_agent_runs(monkeypatch):
+    import time
+
+    from app import main
+    from app.agents import stem
+
+    integrate = stem.integrate
+
+    def slow_integrate(*args, **kwargs):
+        time.sleep(0.3)
+        return integrate(*args, **kwargs)
+
+    monkeypatch.setattr(main, "HEARTBEAT_SECONDS", 0.05)
+    monkeypatch.setattr(stem, "integrate", slow_integrate)
+    problem = client.post("/api/problems", json={"concept": "Magnetism"}).json()["problems"][0]
+    res = client.post("/api/lesson-plan/stream", json={"concept": "Magnetism", "problem": problem})
+    lines = res.text.split("\n")
+    first_event = next(i for i, line in enumerate(lines) if line)
+    assert first_event >= 3  # the opening blank line plus heartbeats during the slow agent
+    assert _stream_events(res)[-1]["type"] == "plan"

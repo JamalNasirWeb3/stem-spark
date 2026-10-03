@@ -1,6 +1,8 @@
 import json
 import logging
 from collections.abc import Iterator
+from queue import Empty, Queue
+from threading import Thread
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -10,6 +12,8 @@ from app.schemas import LessonPlan, LessonPlanRequest, ProblemsRequest, Problems
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
+
+HEARTBEAT_SECONDS = 15
 
 app = FastAPI(title="STEM SPARK")
 
@@ -70,29 +74,50 @@ def lesson_plan_stream(req: LessonPlanRequest) -> StreamingResponse:
 
     Events: {"type": "agent_done", "agent": "stem" | "sts_edp"}, then either
     {"type": "plan", "plan": {...}} or {"type": "error", "code": ..., "message": ...}.
+    Blank lines between events are heartbeats; clients skip them.
     Guardrail rejections still come back as normal HTTP errors before streaming starts.
     """
     concept = _checked_lesson_request(req)
+    queue: Queue[str | None] = Queue()
 
-    def events() -> Iterator[str]:
+    def run() -> None:
         try:
             for step in pipeline.run_lesson_plan(concept, req.problem, req.context):
                 if isinstance(step, LessonPlan):
-                    yield _event({"type": "plan", "plan": step.model_dump()})
+                    queue.put(_event({"type": "plan", "plan": step.model_dump()}))
                 else:
-                    yield _event({"type": "agent_done", "agent": step})
+                    queue.put(_event({"type": "agent_done", "agent": step}))
         except llm.AgentError as e:
-            yield _event({"type": "error", "code": e.code, "message": e.message})
+            queue.put(_event({"type": "error", "code": e.code, "message": e.message}))
         except Exception:
             log.exception("Lesson plan pipeline failed")
-            yield _event(
-                {
-                    "type": "error",
-                    "code": "agent_failed",
-                    "message": "The AI agents could not build this lesson plan. Please retry.",
-                }
+            queue.put(
+                _event(
+                    {
+                        "type": "error",
+                        "code": "agent_failed",
+                        "message": "The AI agents could not build this lesson plan. Please retry.",
+                    }
+                )
             )
+        finally:
+            queue.put(None)
 
+    def events() -> Iterator[str]:
+        # Blank lines are heartbeats: proxies such as Vercel's cancel a request that
+        # sends nothing for 120 s, and one agent can take nearly that long.
+        yield "\n"
+        while True:
+            try:
+                item = queue.get(timeout=HEARTBEAT_SECONDS)
+            except Empty:
+                yield "\n"
+                continue
+            if item is None:
+                return
+            yield item
+
+    Thread(target=run, daemon=True).start()
     return StreamingResponse(events(), media_type="application/x-ndjson")
 
 
