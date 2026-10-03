@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import AgentProgress, { CONCEPT_AGENTS, PLAN_AGENTS } from "@/components/AgentProgress";
+import InstallButton from "@/components/InstallButton";
 import LessonPlanView from "@/components/LessonPlanView";
 import PipelineSteps, { type StepState } from "@/components/PipelineSteps";
 import {
@@ -81,7 +82,11 @@ export default function Home() {
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState<Progress>({ startedAt: 0, stageStartedAt: 0, done: 0 });
+  const [progress, setProgress] = useState<Progress>({
+    startedAt: 0,
+    stageStartedAt: 0,
+    done: 0,
+  });
   const [error, setError] = useState<string | null>(null);
   const [agents, setAgents] = useState<AgentsBadge>("checking");
 
@@ -154,7 +159,11 @@ export default function Home() {
     run(
       () =>
         fetchLessonPlan(concept, problem, context, () =>
-          setProgress((p) => ({ ...p, done: p.done + 1, stageStartedAt: timestamp() })),
+          setProgress((p) => ({
+            ...p,
+            done: p.done + 1,
+            stageStartedAt: timestamp(),
+          })),
         ),
       (result) => {
         setPlan(result);
@@ -189,30 +198,31 @@ export default function Home() {
             From science concepts to real-world STEM solutions.
           </p>
         </div>
-        <span
-          className="mt-2 shrink-0 rounded-lg border border-line px-3 py-2 text-sm text-muted"
-          role="status"
-        >
-          Agents:{" "}
+        <div className="mt-2 flex shrink-0 flex-col items-end gap-2">
           <span
-            className={
-              agents === "ready"
-                ? "font-semibold text-ready"
-                : agents === "offline" || agents === "setup needed"
-                  ? "font-semibold text-danger-fg"
-                  : ""
-            }
+            className="rounded-lg border border-line px-3 py-2 text-sm text-muted"
+            role="status"
           >
-            {agents === "demo" ? "demo mode" : agents}
+            Agents:{" "}
+            <span
+              className={
+                agents === "ready"
+                  ? "font-semibold text-ready"
+                  : agents === "offline" || agents === "setup needed"
+                    ? "font-semibold text-danger-fg"
+                    : ""
+              }
+            >
+              {agents === "demo" ? "demo mode" : agents}
+            </span>
           </span>
-        </span>
+          <InstallButton />
+        </div>
       </header>
 
       <PipelineSteps states={stepStates(step, loading, progress.done)} />
 
-      {error && (
-        <p className="mt-6 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">{error}</p>
-      )}
+      {error && <p className="mt-6 rounded-lg bg-danger-bg p-3 text-sm text-danger-fg">{error}</p>}
 
       {step === "concept" && (
         <>
@@ -350,9 +360,7 @@ export default function Home() {
 
       {step === "select" && (
         <section className="mt-8">
-          <h2 className="mb-1 text-xl font-semibold">
-            Step 2: Choose a problem for “{concept}”
-          </h2>
+          <h2 className="mb-1 text-xl font-semibold">Step 2: Choose a problem for “{concept}”</h2>
           <p className="mb-4 text-muted">
             Pick the real-life problem you want your class to solve. The STEM, STS–EDP and Lesson
             Plan agents will then build the full lesson plan around it. ({gradeLevel} ·{" "}
