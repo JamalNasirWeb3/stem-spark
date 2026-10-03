@@ -7,6 +7,7 @@ import InstallButton from "@/components/InstallButton";
 import LessonPlanView from "@/components/LessonPlanView";
 import PipelineSteps, { type StepState } from "@/components/PipelineSteps";
 import SignInCard from "@/components/SignInCard";
+import UniversityStrip from "@/components/UniversityStrip";
 import {
   ApiError,
   type AgentsStatus,
@@ -377,6 +378,8 @@ export default function Home() {
               />
             )}
           </form>
+
+          <UniversityStrip />
 
           {saved.length > 0 && (
             <section className="mt-10">
