@@ -6,6 +6,7 @@ import AgentProgress, { CONCEPT_AGENTS, PLAN_AGENTS } from "@/components/AgentPr
 import InstallButton from "@/components/InstallButton";
 import LessonPlanView from "@/components/LessonPlanView";
 import PipelineSteps, { type StepState } from "@/components/PipelineSteps";
+import SignInCard from "@/components/SignInCard";
 import {
   ApiError,
   type AgentsStatus,
@@ -16,13 +17,7 @@ import {
   type LessonPlan,
   type Problem,
 } from "@/lib/api";
-import {
-  authEnabled,
-  getAuthState,
-  getServerAuthState,
-  signInWithGoogle,
-  subscribeAuth,
-} from "@/lib/auth";
+import { authEnabled, getAuthState, getServerAuthState, subscribeAuth } from "@/lib/auth";
 import { EXAMPLE_PLAN } from "@/lib/examplePlan";
 import { downloadLessonPlanPdf, preloadPdfExport } from "@/lib/pdfExport";
 import {
@@ -202,6 +197,17 @@ export default function Home() {
     setStep("plan");
   }
 
+  function showSignIn() {
+    setStep("concept");
+    setError(null);
+    // Wait for the concept step (and its sign-in card) to render, then focus the email field.
+    setTimeout(() => {
+      const input = document.getElementById("sign-in-email");
+      input?.scrollIntoView({ behavior: "smooth", block: "center" });
+      input?.focus({ preventScroll: true });
+    }, 50);
+  }
+
   function restart() {
     setStep("concept");
     setProblems([]);
@@ -237,7 +243,7 @@ export default function Home() {
               {agents === "demo" ? "demo mode" : agents}
             </span>
           </span>
-          {authEnabled && <AccountButton auth={auth} />}
+          {authEnabled && <AccountButton auth={auth} onSignIn={showSignIn} />}
           <InstallButton />
         </div>
       </header>
@@ -248,6 +254,7 @@ export default function Home() {
 
       {step === "concept" && (
         <>
+          {needsSignIn && auth.status === "signed_out" && <SignInCard />}
           <form
             onSubmit={submitConcept}
             className="mt-8 rounded-xl border border-line bg-card p-5 sm:p-7"
@@ -340,10 +347,10 @@ export default function Home() {
                 <button
                   type="button"
                   disabled={auth.status === "loading"}
-                  onClick={() => signInWithGoogle()}
+                  onClick={showSignIn}
                   className="rounded-lg border-2 border-accent bg-accent px-5 py-3 font-medium text-accent-contrast disabled:border-line disabled:bg-transparent disabled:text-muted"
                 >
-                  {auth.status === "loading" ? "Checking sign-in…" : "Sign in with Google to start"}
+                  {auth.status === "loading" ? "Checking sign-in…" : "Sign in to start"}
                 </button>
               ) : (
                 <button

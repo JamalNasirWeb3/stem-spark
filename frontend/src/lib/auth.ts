@@ -1,4 +1,6 @@
-// Teacher sign-in with Google through Supabase Auth.
+// Teacher sign-in by email through Supabase Auth. The email carries a sign-in
+// link and a one-time code; the code also works when the email is opened on
+// another device or the link opens outside the installed app.
 // Exposed as an external store for useSyncExternalStore.
 //
 // Sign-in is on when NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -15,7 +17,9 @@ export const authEnabled = Boolean(url && anonKey);
 export const supabase: SupabaseClient | null =
   authEnabled && typeof window !== "undefined"
     ? createClient(url!, anonKey!, {
-        auth: { flowType: "pkce", persistSession: true, detectSessionInUrl: true },
+        // Implicit flow: the emailed link signs the teacher in on whichever device
+        // opens it (PKCE links only work in the browser that requested them).
+        auth: { flowType: "implicit", persistSession: true, detectSessionInUrl: true },
       })
     : null;
 
@@ -32,8 +36,8 @@ if (supabase) {
   supabase.auth.onAuthStateChange((_event, session) => {
     state = session ? { status: "signed_in", session } : SIGNED_OUT;
     listeners.forEach((l) => l());
-    // Drop the one-time ?code= from the address bar after Google sends the teacher back.
-    if (session && new URLSearchParams(window.location.search).has("code")) {
+    // Drop sign-in tokens from the address bar after an emailed link brings the teacher back.
+    if (session && /access_token|error_description/.test(window.location.hash)) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   });
@@ -52,11 +56,32 @@ export function subscribeAuth(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-export async function signInWithGoogle() {
-  await supabase?.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${window.location.origin}/` },
+/** Turns Supabase errors into something a teacher can act on. */
+function friendly(error: { message: string; status?: number }): string {
+  if (error.status === 429 || /rate limit|too many/i.test(error.message)) {
+    return "Too many sign-in emails were sent. Please wait a few minutes and try again.";
+  }
+  if (/expired|invalid/i.test(error.message)) {
+    return "That code is wrong or has expired. Check the latest email, or send a new one.";
+  }
+  return error.message;
+}
+
+/** Emails a sign-in link and code. New teachers get an account automatically. */
+export async function sendSignInEmail(email: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: `${window.location.origin}/`, shouldCreateUser: true },
   });
+  if (error) throw new Error(friendly(error));
+}
+
+/** Signs in with the one-time code from the email. */
+export async function verifySignInCode(email: string, code: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.auth.verifyOtp({ email, token: code, type: "email" });
+  if (error) throw new Error(friendly(error));
 }
 
 export async function signOut() {

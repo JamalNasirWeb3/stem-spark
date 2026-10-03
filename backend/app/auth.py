@@ -1,4 +1,4 @@
-"""Teacher sign-in (Supabase Auth, Google accounts) and per-teacher daily limits.
+"""Teacher sign-in (Supabase Auth, email link or code) and per-teacher daily limits.
 
 The frontend signs teachers in with Supabase and sends the session's access
 token as `Authorization: Bearer <token>`. We check it by asking Supabase who the
@@ -87,7 +87,7 @@ def current_teacher(authorization: Annotated[str | None, Header()] = None) -> Te
 
     scheme, _, token = (authorization or "").partition(" ")
     if scheme.lower() != "bearer" or not token.strip():
-        raise _error(401, "not_signed_in", "Please sign in with Google to create lesson plans.")
+        raise _error(401, "not_signed_in", "Please sign in to create lesson plans.")
     token = token.strip()
 
     try:
