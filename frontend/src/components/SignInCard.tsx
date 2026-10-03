@@ -51,8 +51,8 @@ export default function SignInCard() {
       {sentTo === null ? (
         <form onSubmit={sendEmail}>
           <p className="mt-1 text-muted">
-            Enter your email. We&apos;ll send you a sign-in link and code, with no password needed.
-            New teachers get an account automatically.
+            Enter your email and we&apos;ll send you a sign-in link, with no password needed. New
+            teachers get an account automatically.
           </p>
           <label htmlFor="sign-in-email" className="mt-5 block font-medium">
             Email
@@ -68,17 +68,18 @@ export default function SignInCard() {
             required
           />
           <button disabled={busy || !email.trim()} className={`${PRIMARY} mt-4`}>
-            {busy ? "Sending…" : "Email me a sign-in code"}
+            {busy ? "Sending…" : "Email me a sign-in link"}
           </button>
         </form>
       ) : (
         <form onSubmit={submitCode}>
           <p className="mt-1 text-muted">
-            We sent an email to <strong className="text-foreground">{sentTo}</strong>. Click the
-            link in it, or type the code here. Check your spam folder if it hasn&apos;t arrived.
+            We sent an email to <strong className="text-foreground">{sentTo}</strong>. Open it on
+            this device and click the sign-in link. Check your spam folder if it hasn&apos;t
+            arrived.
           </p>
           <label htmlFor="sign-in-code" className="mt-5 block font-medium">
-            Code from the email
+            Email shows a code instead? Type it here
           </label>
           <input
             id="sign-in-code"
