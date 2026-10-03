@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "STEM Spark",
-  description: "From Science Concepts to Real-World STEM Solutions.",
-  appleWebApp: { capable: true, title: "STEM Spark", statusBarStyle: "default" },
+  title: "STEM Lesson Planner AI",
+  description: "From science concepts to real-world STEM solutions.",
+  appleWebApp: { capable: true, title: "STEM Planner", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4f46e5",
+  themeColor: "#1e2a4a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

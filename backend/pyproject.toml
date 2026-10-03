@@ -4,8 +4,10 @@ version = "0.1.0"
 description = "STEM Spark agent pipeline API"
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=1.11.0",
     "fastapi>=0.142.2",
     "pydantic>=2.13.5",
+    "python-dotenv>=1.2.4",
     "uvicorn[standard]>=0.54.0",
 ]
 

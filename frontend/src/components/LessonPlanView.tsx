@@ -21,11 +21,26 @@ function List({ items }: { items: string[] }) {
 
 export default function LessonPlanView({ plan }: { plan: LessonPlan }) {
   const stem = plan.stem_integration;
+  // Plans saved before lesson context existed have no `context` or stage minutes.
+  const ctx = plan.context as LessonPlan["context"] | undefined;
   return (
     <article>
-      <p className="text-sm uppercase tracking-wide opacity-60">{plan.concept}</p>
+      <p className="text-sm uppercase tracking-wide text-muted">{plan.concept}</p>
       <h2 className="text-2xl font-bold">{plan.problem.title}</h2>
-      <p className="mt-1 opacity-80">{plan.problem.description}</p>
+      <p className="mt-1 text-muted">{plan.problem.description}</p>
+      {ctx && (
+        <p className="mt-3 flex flex-wrap gap-2 text-sm">
+          <span className="rounded-full border border-line px-3 py-1">{ctx.grade_level}</span>
+          <span className="rounded-full border border-line px-3 py-1">
+            {ctx.lesson_minutes} minutes
+          </span>
+          {ctx.classroom_context && (
+            <span className="rounded-full border border-line px-3 py-1">
+              {ctx.classroom_context}
+            </span>
+          )}
+        </p>
+      )}
 
       <Section title="Objectives">
         <List items={plan.objectives} />
@@ -43,9 +58,9 @@ export default function LessonPlanView({ plan }: { plan: LessonPlan }) {
               ["Mathematics", stem.mathematics],
             ] as const
           ).map(([label, text]) => (
-            <div key={label} className="rounded border border-gray-200 p-3">
-              <dt className="font-medium text-indigo-600">{label}</dt>
-              <dd className="text-sm">{text}</dd>
+            <div key={label} className="rounded-lg border border-line bg-card p-3">
+              <dt className="font-semibold">{label}</dt>
+              <dd className="text-sm text-muted">{text}</dd>
             </div>
           ))}
         </dl>
@@ -56,8 +71,14 @@ export default function LessonPlanView({ plan }: { plan: LessonPlan }) {
       <Section title="Engineering Design Process">
         <ol className="space-y-2">
           {plan.sts_edp.stages.map((s) => (
-            <li key={s.stage}>
-              <span className="font-medium">{s.stage}</span>: {s.description}
+            <li key={s.stage} className="flex gap-3">
+              <span className="w-20 shrink-0 font-semibold">
+                {s.stage}
+                {s.minutes != null && (
+                  <span className="block text-xs font-normal text-muted">{s.minutes} min</span>
+                )}
+              </span>
+              <span>{s.description}</span>
             </li>
           ))}
         </ol>

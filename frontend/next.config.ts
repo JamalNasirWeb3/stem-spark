@@ -5,6 +5,15 @@ import type { NextConfig } from "next";
 const backendUrl = process.env.BACKEND_URL ?? "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
+  // `next dev` only serves its client scripts to localhost by default. Without
+  // this, opening http://127.0.0.1:<port> renders the page but nothing hydrates,
+  // so every button is dead.
+  allowedDevOrigins: ["127.0.0.1"],
+  experimental: {
+    // The /api proxy times out after 30 s by default. Building a lesson plan
+    // runs three Claude agents in sequence and can take a minute or more.
+    proxyTimeout: 300_000,
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
   },
